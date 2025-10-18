@@ -1,13 +1,26 @@
 #include "../include/trapezoid.h"
 #include "../include/point.h"
+#include <cmath>
+#include <iostream>
 
 // Конструктор с параметрами описания и четырьмя точками.
 Trapezoid::Trapezoid(const Point& p1, const Point& p2, const Point& p3, const Point& p4, std::string description)
     : Figure(description) {
-    points[0] = p1;
-    points[1] = p2;
-    points[2] = p3;
-    points[3] = p4;
+        // Координаты векторов сторон трапеции.
+        Point AB = Point(p1.get_x() - p2.get_x(), p1.get_y() - p2.get_y());
+        Point BC = Point(p2.get_x() - p3.get_x(), p2.get_y() - p3.get_y());
+        Point CD = Point(p3.get_x() - p4.get_x(), p3.get_y() - p4.get_y());
+        Point DA = Point(p4.get_x() - p1.get_x(), p4.get_y() - p1.get_y());
+        // Проверка, что хотя бы одна пара противоположных сторон параллельна. Если векторное произведение равно нулю, то векторы параллельны.
+        if (!((AB.get_x() * CD.get_y() - AB.get_y() * CD.get_x()) > 1e-10 ||
+              (BC.get_x() * DA.get_y() - BC.get_y() * DA.get_x()) > 1e-10)) {
+            throw std::invalid_argument("Invalid trapezoid points: at least one pair of opposite sides must be parallel.");
+        }
+        // Если проверки пройдены, сохраняем точки.
+        points[0] = p1;
+        points[1] = p2;
+        points[2] = p3;
+        points[3] = p4;
 }
 
 // Перегрузка операторов = копирования и перемещения.
@@ -40,7 +53,7 @@ bool Trapezoid::operator==(const Trapezoid& other) const {
 }
 
 // Перегрузка оператора сравнения <=>
-auto Trapezoid::operator<=>(const Trapezoid& other) const {
+std::partial_ordering Trapezoid::operator<=>(const Trapezoid& other) const {
     return this->square() <=> other.square();
 }
 
@@ -50,14 +63,28 @@ Point Trapezoid::geometric_center() const {
     return Point(center_x, center_y);
 }
 
+// Вычисление площади трапеции с помощью формулы площади многоугольника.
+/*
+“Шнуровка” (формула Гаусса) для многоугольников Это универсальная формула для площади многоугольника по упорядоченным вершинам (по обходу).
+
+Формула: S = 1/2 · |Σ_{i=1..n} (x_i·y_{i+1} − y_i·x_{i+1})|, где (x_{n+1}, y_{n+1}) = (x_1, y_1).
+
+Для 4 точек A→B→C→D→A: S = 1/2 · |x_A y_B + x_B y_C + x_C y_D + x_D y_A − (y_A x_B + y_B x_C + y_C x_D + y_D x_A)|
+*/
 double Trapezoid::square() const {
-    // return (abs(points[0].get_x())) / 2.0;
+    double square = 0.5 * fabs((points[0].get_x() * points[1].get_y() + points[1].get_x() * points[2].get_y() +
+                          points[2].get_x() * points[3].get_y() + points[3].get_x() * points[0].get_y()) -
+                    (points[1].get_x() * points[0].get_y() + points[2].get_x() * points[1].get_y() +
+                           points[3].get_x() * points[2].get_y() + points[0].get_x() * points[3].get_y()));
+    return square;
 }
 
 double Trapezoid::perimeter() const {
-    double length = distance(points[0], points[1]);
-    double width = distance(points[0], points[3]);
-    return 2 * (length + width);
+    double lenth1 = distance(points[0] ,points[1]);
+    double length2 = distance(points[2], points[3]);
+    double length3 = distance(points[1], points[2]);
+    double length4 = distance(points[3], points[0]);
+    return lenth1 + length2 + length3 + length4;
 }
 
 Trapezoid::operator double() const {
